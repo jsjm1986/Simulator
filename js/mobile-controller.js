@@ -5,6 +5,9 @@ class MobileController {
         this.touchStartTime = 0;
         this.lastMoveTime = 0;
         this.moveThrottle = 16; // 约60fps
+        this.currentDirection = null;
+        this.forceInterval = null;
+        this.forceIncreaseSpeed = 2;
         
         if (this.isMobile) {
             this.setupMobileControls();
@@ -55,97 +58,63 @@ class MobileController {
     bindJoystickEvents() {
         let isDragging = false;
         let startX, startY;
-        let baseRect;
         
         const handleStart = (e) => {
+            e.preventDefault();
             const touch = e.touches[0];
             isDragging = true;
-            this.touchStartTime = Date.now();
-            baseRect = this.joystickBase.getBoundingClientRect();
-            startX = baseRect.left + baseRect.width / 2;
-            startY = baseRect.top + baseRect.height / 2;
+            const rect = this.joystickBase.getBoundingClientRect();
+            startX = rect.left + rect.width / 2;
+            startY = rect.top + rect.height / 2;
             this.joystickBase.style.opacity = '0.8';
+            
+            // 立即处理第一次触摸
+            this.handleJoystickMove(touch.clientX - startX, touch.clientY - startY);
         };
         
         const handleMove = (e) => {
             if (!isDragging) return;
-            
-            const now = Date.now();
-            if (now - this.lastMoveTime < this.moveThrottle) return;
-            this.lastMoveTime = now;
+            e.preventDefault();
             
             const touch = e.touches[0];
             const deltaX = touch.clientX - startX;
             const deltaY = touch.clientY - startY;
             
-            // 计算摇杆移动距离和角度
-            const maxDistance = 40;
-            const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), maxDistance);
-            const angle = Math.atan2(deltaY, deltaX);
-            
-            // 更新摇杆位置
-            const moveX = Math.cos(angle) * distance;
-            const moveY = Math.sin(angle) * distance;
-            
-            this.joystickHandle.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
-            
-            // 根据摇杆位置确定移动方向
-            this.handleMovement(moveX, moveY);
+            this.handleJoystickMove(deltaX, deltaY);
         };
         
-        const handleEnd = () => {
+        const handleEnd = (e) => {
             if (!isDragging) return;
+            e.preventDefault();
             isDragging = false;
             this.joystickHandle.style.transform = 'translate(-50%, -50%)';
             this.joystickBase.style.opacity = '0.7';
-            this.game.character.stopMoving();
+            this.currentDirection = null;
+            if (this.game.character) {
+                this.game.character.stopMoving();
+            }
         };
         
-        this.joystickContainer.addEventListener('touchstart', handleStart, { passive: false });
-        this.joystickContainer.addEventListener('touchmove', handleMove, { passive: false });
+        this.joystickContainer.addEventListener('touchstart', handleStart);
+        this.joystickContainer.addEventListener('touchmove', handleMove);
         this.joystickContainer.addEventListener('touchend', handleEnd);
         this.joystickContainer.addEventListener('touchcancel', handleEnd);
     }
 
-    bindActionButtonEvents() {
-        let isPressed = false;
-        let pressStartTime = 0;
-        const longPressThreshold = 300; // 长按阈值（毫秒）
+    handleJoystickMove(deltaX, deltaY) {
+        // 计算移动距离和角度
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const maxDistance = 40;
+        const normalizedDistance = Math.min(distance, maxDistance);
+        const angle = Math.atan2(deltaY, deltaX);
         
-        const handleStart = (e) => {
-            e.preventDefault();
-            isPressed = true;
-            pressStartTime = Date.now();
-            this.actionButton.classList.add('active');
-            
-            if (this.game.character.isNearToilet()) {
-                this.game.handleForceControl(true);
-            }
-        };
+        // 更新摇杆位置
+        const moveX = Math.cos(angle) * normalizedDistance;
+        const moveY = Math.sin(angle) * normalizedDistance;
+        this.joystickHandle.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
         
-        const handleEnd = () => {
-            if (!isPressed) return;
-            isPressed = false;
-            const pressDuration = Date.now() - pressStartTime;
-            
-            this.actionButton.classList.remove('active');
-            if (this.game.character.isNearToilet()) {
-                this.game.handleForceControl(false);
-                
-                // 短按时直接完成
-                if (pressDuration < longPressThreshold) {
-                    this.game.completeTask();
-                }
-            }
-        };
-        
-        this.actionButton.addEventListener('touchstart', handleStart, { passive: false });
-        this.actionButton.addEventListener('touchend', handleEnd);
-        this.actionButton.addEventListener('touchcancel', handleEnd);
-    }
-
-    handleMovement(moveX, moveY) {
-        const threshold = 8;
+        // 确定移动方向
+        const threshold = 10;
         const directions = {
             up: false,
             down: false,
@@ -153,14 +122,97 @@ class MobileController {
             right: false
         };
         
-        // 根据摇杆位置确定移动方向
-        if (moveY < -threshold) directions.up = true;
-        if (moveY > threshold) directions.down = true;
-        if (moveX < -threshold) directions.left = true;
-        if (moveX > threshold) directions.right = true;
+        // 根据角度确定方向
+        const degrees = angle * 180 / Math.PI;
+        if (distance > threshold) {
+            if (degrees > -135 && degrees <= -45) directions.up = true;
+            if (degrees > 45 && degrees <= 135) directions.down = true;
+            if (degrees > 135 || degrees <= -135) directions.left = true;
+            if (degrees > -45 && degrees <= 45) directions.right = true;
+            
+            // 更新角色移动
+            if (this.game.character) {
+                this.game.character.move(directions);
+            }
+        }
+    }
+
+    bindActionButtonEvents() {
+        let isPressed = false;
+        let pressStartTime = 0;
+        const longPressThreshold = 300;
         
-        // 更新角色移动
-        this.game.character.move(directions);
+        const handleStart = (e) => {
+            e.preventDefault();
+            isPressed = true;
+            pressStartTime = Date.now();
+            this.actionButton.classList.add('active');
+            
+            if (this.game.character && this.game.character.isNearToilet()) {
+                // 开始持续增加力度
+                this.startForceControl();
+            }
+        };
+        
+        const handleEnd = (e) => {
+            if (!isPressed) return;
+            e.preventDefault();
+            isPressed = false;
+            const pressDuration = Date.now() - pressStartTime;
+            
+            this.actionButton.classList.remove('active');
+            if (this.game.character && this.game.character.isNearToilet()) {
+                // 停止力度控制
+                this.stopForceControl();
+                
+                // 短按时直接完成任务
+                if (pressDuration < longPressThreshold) {
+                    this.game.completeTask();
+                }
+            }
+        };
+        
+        this.actionButton.addEventListener('touchstart', handleStart);
+        this.actionButton.addEventListener('touchend', handleEnd);
+        this.actionButton.addEventListener('touchcancel', handleEnd);
+    }
+
+    startForceControl() {
+        // 清除可能存在的旧定时器
+        if (this.forceInterval) {
+            clearInterval(this.forceInterval);
+        }
+
+        // 重置力度值
+        if (this.game.forceLevel === undefined) {
+            this.game.forceLevel = 0;
+        }
+
+        // 创建新的力度控制定时器
+        this.forceInterval = setInterval(() => {
+            if (this.game.character && this.game.character.isNearToilet()) {
+                // 增加力度值
+                this.game.forceLevel = (this.game.forceLevel + this.forceIncreaseSpeed) % 100;
+                
+                // 更新UI显示
+                const forceFill = document.querySelector('#force-meter .meter-fill');
+                if (forceFill) {
+                    forceFill.style.width = `${this.game.forceLevel}%`;
+                }
+
+                // 检查是否在完成范围内
+                if (this.game.forceLevel >= 45 && this.game.forceLevel <= 55) {
+                    this.game.showTip('力度合适！松开完成！', 1000);
+                }
+            }
+        }, 50); // 每50ms更新一次
+    }
+
+    stopForceControl() {
+        if (this.forceInterval) {
+            clearInterval(this.forceInterval);
+            this.forceInterval = null;
+        }
     }
 
     setupLandscapeNotice() {
