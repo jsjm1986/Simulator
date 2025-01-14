@@ -1,193 +1,149 @@
 class Character {
     constructor(type) {
         this.type = type;
-        this.urgencyLevel = 0;
-        this.maxUrgency = 100;
-        this.position = { x: 50, y: 300 };
-        this.isMoving = false;
-        this.direction = 'right';
-        this.element = document.getElementById('character');
-        this.urgencyFillElement = document.getElementById('urgency-fill');
-        
-        // 角色特性
-        this.traits = {
-            urgencyRate: 1,
-            controlDifficulty: 1,
-            maxHoldTime: 60,
-            moveSpeed: 8
+        this.setTraits();
+        this.position = {
+            x: Math.random() * 700 + 50,
+            y: Math.random() * 500 + 50
         };
-        
-        this.initTraits();
+        this.element = document.getElementById('character');
+        this.statusElement = this.element.querySelector('.character-status');
         this.initAppearance();
+        this.moving = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
     }
 
-    initTraits() {
+    setTraits() {
         switch(this.type) {
             case 'normal':
                 this.name = '普通人';
-                this.traits.moveSpeed = 8;
-                this.traits.urgencyRate = 0.8;
+                this.traits = {
+                    moveSpeed: 8,
+                    urgencyRate: 1
+                };
                 break;
             case 'urgent':
                 this.name = '急迫者';
-                this.traits.urgencyRate = 1.2;
-                this.traits.maxHoldTime = 50;
-                this.traits.moveSpeed = 12;
+                this.traits = {
+                    moveSpeed: 12,
+                    urgencyRate: 1.5
+                };
                 break;
             case 'pro':
                 this.name = '老司机';
-                this.traits.controlDifficulty = 0.7;
-                this.traits.maxHoldTime = 75;
-                this.traits.moveSpeed = 10;
-                this.traits.urgencyRate = 0.6;
+                this.traits = {
+                    moveSpeed: 10,
+                    urgencyRate: 0.8
+                };
                 break;
         }
     }
 
     initAppearance() {
-        this.element.style.backgroundImage = `url('${GameAssets.characters[this.type]}')`;
         this.element.style.left = `${this.position.x}px`;
         this.element.style.top = `${this.position.y}px`;
+        this.element.className = `character ${this.type}`;
     }
 
-    move(direction) {
-        if (this.isMoving) return;
+    move(directions) {
+        // 如果传入的是字符串（键盘控制），转换为方向对象
+        if (typeof directions === 'string') {
+            const dir = directions;
+            directions = {
+                up: dir === 'up',
+                down: dir === 'down',
+                left: dir === 'left',
+                right: dir === 'right'
+            };
+        }
 
+        // 更新移动状态
+        this.moving = directions;
+
+        // 计算移动
+        let deltaX = 0;
+        let deltaY = 0;
         const speed = this.traits.moveSpeed;
-        let newX = this.position.x;
-        let newY = this.position.y;
 
-        switch(direction) {
-            case 'up':
-                newY -= speed;
-                break;
-            case 'down':
-                newY += speed;
-                break;
-            case 'left':
-                newX -= speed;
-                this.direction = 'left';
-                this.element.style.transform = 'scaleX(-1)';
-                break;
-            case 'right':
-                newX += speed;
-                this.direction = 'right';
-                this.element.style.transform = 'scaleX(1)';
-                break;
+        if (this.moving.up) deltaY -= speed;
+        if (this.moving.down) deltaY += speed;
+        if (this.moving.left) deltaX -= speed;
+        if (this.moving.right) deltaX += speed;
+
+        // 对角线移动时减慢速度
+        if ((this.moving.up || this.moving.down) && (this.moving.left || this.moving.right)) {
+            deltaX *= 0.707; // Math.cos(45°)
+            deltaY *= 0.707; // Math.sin(45°)
         }
-
-        // 检查边界并添加一些缓冲区
-        const buffer = 10;
-        if (newX >= buffer && newX <= 750 - buffer && newY >= buffer && newY <= 550 - buffer) {
-            this.moveTo(newX, newY);
-        }
-    }
-
-    moveTo(x, y) {
-        this.isMoving = true;
-        this.position = { x, y };
 
         // 更新位置
-        this.element.style.left = `${x}px`;
-        this.element.style.top = `${y}px`;
-        
-        // 添加走路动画，但缩短动画时间
-        this.element.classList.add('walking');
-        
-        // 缩短移动锁定时间，使移动更流畅
-        setTimeout(() => {
-            this.isMoving = false;
+        const newX = Math.max(0, Math.min(window.innerWidth - 50, this.position.x + deltaX));
+        const newY = Math.max(0, Math.min(window.innerHeight - 50, this.position.y + deltaY));
+
+        this.position.x = newX;
+        this.position.y = newY;
+
+        // 更新元素位置
+        this.element.style.left = `${this.position.x}px`;
+        this.element.style.top = `${this.position.y}px`;
+
+        // 更新动画状态
+        if (deltaX !== 0 || deltaY !== 0) {
+            this.element.classList.add('walking');
+            
+            // 设置朝向
+            if (deltaX < 0) {
+                this.element.classList.add('facing-left');
+                this.element.classList.remove('facing-right');
+            } else if (deltaX > 0) {
+                this.element.classList.add('facing-right');
+                this.element.classList.remove('facing-left');
+            }
+        } else {
             this.element.classList.remove('walking');
-        }, 150);
+        }
+    }
+
+    stopMoving() {
+        this.moving = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+        this.element.classList.remove('walking');
     }
 
     isNearToilet() {
         const toilets = document.querySelectorAll('.toilet');
-        for (let toilet of toilets) {
+        const characterRect = this.element.getBoundingClientRect();
+        const characterCenter = {
+            x: characterRect.left + characterRect.width / 2,
+            y: characterRect.top + characterRect.height / 2
+        };
+
+        for (const toilet of toilets) {
             const toiletRect = toilet.getBoundingClientRect();
-            const characterRect = this.element.getBoundingClientRect();
-            
+            const toiletCenter = {
+                x: toiletRect.left + toiletRect.width / 2,
+                y: toiletRect.top + toiletRect.height / 2
+            };
+
             const distance = Math.sqrt(
-                Math.pow((toiletRect.x + toiletRect.width/2) - (characterRect.x + characterRect.width/2), 2) +
-                Math.pow((toiletRect.y + toiletRect.height/2) - (characterRect.y + characterRect.height/2), 2)
+                Math.pow(characterCenter.x - toiletCenter.x, 2) +
+                Math.pow(characterCenter.y - toiletCenter.y, 2)
             );
-            
-            // 增加检测范围，使交互更容易
+
             if (distance < 60) {
                 return true;
             }
         }
+
         return false;
-    }
-
-    update(deltaTime) {
-        if (!this.isInToilet) {
-            // 调整急迫度增长速度
-            this.urgencyLevel = Math.min(
-                this.maxUrgency,
-                this.urgencyLevel + (this.traits.urgencyRate * deltaTime * 0.15)
-            );
-            
-            // 更新急迫度显示
-            if (this.urgencyFillElement) {
-                this.urgencyFillElement.style.width = `${this.urgencyLevel}%`;
-            }
-
-            // 根据急迫度添加动画效果
-            if (this.urgencyLevel > 80) {
-                this.element.classList.add('urgent');
-                this.element.style.animation = 'urgent 0.3s infinite';
-                // 在极度急迫时略微提升移动速度
-                this.traits.moveSpeed *= 1.1;
-            } else if (this.urgencyLevel > 50) {
-                this.element.classList.add('uncomfortable');
-                this.element.style.animation = 'uncomfortable 0.5s infinite';
-            } else {
-                this.element.classList.remove('urgent', 'uncomfortable');
-                this.element.style.animation = '';
-                // 恢复正常速度
-                this.traits.moveSpeed = this.type === 'urgent' ? 12 : (this.type === 'pro' ? 10 : 8);
-            }
-        }
-    }
-
-    startToilet() {
-        this.isInToilet = true;
-        this.element.classList.add('in-toilet');
-        this.showTooltip('按住空格键控制力度！');
-    }
-
-    endToilet() {
-        this.isInToilet = false;
-        this.urgencyLevel = 0;
-        this.element.classList.remove('in-toilet');
-        this.hideTooltip();
-    }
-
-    showTooltip(text) {
-        const tooltip = document.getElementById('tooltip');
-        if (tooltip) {
-            tooltip.textContent = text;
-            tooltip.style.display = 'block';
-            tooltip.style.left = `${this.position.x + 25}px`;
-            tooltip.style.top = `${this.position.y - 30}px`;
-        }
-    }
-
-    hideTooltip() {
-        const tooltip = document.getElementById('tooltip');
-        if (tooltip) {
-            tooltip.style.display = 'none';
-        }
-    }
-
-    getStatus() {
-        return {
-            urgencyLevel: this.urgencyLevel,
-            isMoving: this.isMoving,
-            isInToilet: this.isInToilet,
-            position: this.position
-        };
     }
 }
 

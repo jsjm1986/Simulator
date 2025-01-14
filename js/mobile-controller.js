@@ -122,17 +122,41 @@ class MobileController {
             right: false
         };
         
-        // 根据角度确定方向
-        const degrees = angle * 180 / Math.PI;
         if (distance > threshold) {
-            if (degrees > -135 && degrees <= -45) directions.up = true;
-            if (degrees > 45 && degrees <= 135) directions.down = true;
-            if (degrees > 135 || degrees <= -135) directions.left = true;
-            if (degrees > -45 && degrees <= 45) directions.right = true;
+            // 将角度转换为0-360度
+            let degrees = angle * 180 / Math.PI;
+            if (degrees < 0) degrees += 360;
+            
+            // 8方向移动
+            if (degrees >= 337.5 || degrees < 22.5) directions.right = true;
+            if (degrees >= 22.5 && degrees < 67.5) {
+                directions.right = true;
+                directions.down = true;
+            }
+            if (degrees >= 67.5 && degrees < 112.5) directions.down = true;
+            if (degrees >= 112.5 && degrees < 157.5) {
+                directions.down = true;
+                directions.left = true;
+            }
+            if (degrees >= 157.5 && degrees < 202.5) directions.left = true;
+            if (degrees >= 202.5 && degrees < 247.5) {
+                directions.left = true;
+                directions.up = true;
+            }
+            if (degrees >= 247.5 && degrees < 292.5) directions.up = true;
+            if (degrees >= 292.5 && degrees < 337.5) {
+                directions.up = true;
+                directions.right = true;
+            }
             
             // 更新角色移动
             if (this.game.character) {
                 this.game.character.move(directions);
+            }
+        } else {
+            // 停止移动
+            if (this.game.character) {
+                this.game.character.stopMoving();
             }
         }
     }
