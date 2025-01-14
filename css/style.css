@@ -1,0 +1,726 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* 游戏容器 */
+#game-container {
+    width: 1000px;
+    height: 600px;
+    background-color: white;
+    position: relative;
+    display: flex;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+/* 游戏场景 */
+#game-scene {
+    flex: 1;
+    height: 100%;
+    position: relative;
+    background-color: #90EE90;
+    overflow: hidden;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+}
+
+/* 游戏UI面板 */
+#game-ui {
+    width: 250px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border-left: 1px solid rgba(0,0,0,0.1);
+}
+
+/* 状态面板 */
+#stats {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #333;
+}
+
+.stat-item:last-child {
+    margin-bottom: 0;
+}
+
+.stat-label {
+    font-weight: 500;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/* 指示器样式 */
+.meter-container {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.meter-label {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+#urgency-meter, #force-meter {
+    height: 12px;
+    background-color: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+#urgency-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4CAF50, #ff9800, #f44336);
+    transition: width 0.3s ease-out;
+}
+
+.meter-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4CAF50 0%, #FFC107 50%, #F44336 100%);
+    transition: width 0.1s ease-out;
+}
+
+/* 控制说明 */
+.controls-guide {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-width: 180px;
+}
+
+.controls-guide h4 {
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.controls-guide ul {
+    list-style: none;
+}
+
+.controls-guide li {
+    color: #666;
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 游戏提示 */
+.game-tips {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 900;
+    text-align: center;
+    pointer-events: none;
+}
+
+/* 状态指示器 */
+.status-indicator {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 800;
+}
+
+/* 游戏元素样式 */
+#character {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    transition: all 0.3s ease;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 100;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.toilet {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 50;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.toilet.available {
+    animation: pulse 2s infinite;
+}
+
+.toilet.unavailable {
+    filter: grayscale(1) opacity(0.5);
+    animation: none;
+}
+
+.npc {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 75;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* 游戏菜单 */
+#game-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#game-menu.active {
+    display: flex;
+}
+
+.menu-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 15px;
+    max-width: 600px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.menu-content h1 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.menu-content h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.game-desc {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.menu-buttons button,
+.back-button {
+    padding: 12px 24px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.menu-buttons button:hover,
+.back-button:hover {
+    background-color: #45a049;
+}
+
+.back-button {
+    margin-top: 20px;
+    background-color: #666;
+}
+
+.back-button:hover {
+    background-color: #555;
+}
+
+.selection-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.selection-item {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.selection-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.character-preview,
+.scene-preview {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+}
+
+.selection-item h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.selection-item p {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* 状态提示和游戏提示的样式优化 */
+.game-tips.active,
+.status-indicator.active {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.game-tips {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+    transition: all 0.3s ease-out;
+}
+
+.status-indicator {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+    transition: all 0.3s ease-out;
+}
+
+/* 角色预览样式 */
+.character-preview.normal {
+    background-color: #4CAF50;
+}
+
+.character-preview.urgent {
+    background-color: #FF9800;
+}
+
+.character-preview.pro {
+    background-color: #2196F3;
+}
+
+/* 场景预览样式 */
+.scene-preview.home {
+    background-color: #9C27B0;
+}
+
+.scene-preview.office {
+    background-color: #FF5722;
+}
+
+.scene-preview.park {
+    background-color: #795548;
+}
+
+/* 游戏场景中的角色样式 */
+#character {
+    width: 40px;
+    height: 40px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    position: absolute;
+    transition: all 0.3s ease;
+}
+
+/* 确保游戏UI面板始终可见 */
+#game-ui {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-left: 1px solid rgba(0,0,0,0.1);
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    #game-container {
+        width: 800px;
+    }
+    
+    #game-ui {
+        width: 200px;
+    }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 层级管理 */
+.z-index-layers {
+    --layer-base: 1;
+    --layer-ui: 100;
+    --layer-menu: 1000;
+}
+
+#game-scene { z-index: var(--layer-base); }
+#game-ui { z-index: var(--layer-ui); }
+.game-tips { z-index: var(--layer-ui); }
+.status-indicator { z-index: var(--layer-ui); }
+#game-menu { z-index: var(--layer-menu); }
+
+/* 角色动画 */
+@keyframes walking {
+    0% { transform: translateY(0); }
+    25% { transform: translateY(-2px); }
+    75% { transform: translateY(2px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes urgent {
+    0% { transform: translateX(-2px) translateY(-2px); }
+    25% { transform: translateX(2px) translateY(-2px); }
+    50% { transform: translateX(-2px) translateY(2px); }
+    75% { transform: translateX(2px) translateY(2px); }
+    100% { transform: translateX(-2px) translateY(-2px); }
+}
+
+@keyframes uncomfortable {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+    100% { transform: translateX(0); }
+}
+
+.walking {
+    animation: walking 0.3s infinite;
+}
+
+.urgent {
+    animation: urgent 0.3s infinite;
+}
+
+.uncomfortable {
+    animation: uncomfortable 0.5s infinite;
+}
+
+/* 厕所动画 */
+.toilet {
+    transition: all 0.3s ease;
+}
+
+.toilet:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+
+.toilet.unavailable {
+    filter: grayscale(1) opacity(0.5);
+}
+
+/* NPC动画 */
+.npc {
+    transition: all 0.3s ease;
+}
+
+.npc:hover {
+    transform: scale(1.1);
+}
+
+/* 游戏提示动画 */
+@keyframes tipFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.game-tips.active {
+    animation: tipFadeIn 0.3s ease-out forwards;
+}
+
+/* 状态指示器动画 */
+@keyframes statusFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.status-indicator.active {
+    animation: statusFadeIn 0.3s ease-out forwards;
+}
+
+/* 力度计动画 */
+@keyframes meterPulse {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(1.05); }
+    100% { transform: scaleY(1); }
+}
+
+.meter-fill {
+    transform-origin: bottom;
+    animation: meterPulse 1s infinite;
+}
+
+/* 游戏结束动画 */
+@keyframes gameOverFade {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.game-over {
+    animation: gameOverFade 0.5s ease-out forwards;
+}
+
+/* 选择界面动画 */
+@keyframes selectionFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.selection-item {
+    animation: selectionFade 0.3s ease-out forwards;
+    animation-delay: calc(var(--item-index) * 0.1s);
+}
+
+/* 按钮动画 */
+.menu-buttons button {
+    transition: all 0.3s ease;
+}
+
+.menu-buttons button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.menu-buttons button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* 场景切换动画 */
+@keyframes sceneFade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+#game-scene {
+    animation: sceneFade 0.5s ease-out;
+}
+
+/* 障碍物动画 */
+.obstacle {
+    transition: all 0.3s ease;
+}
+
+.obstacle:hover {
+    filter: brightness(1.1);
+}
+
+/* 游戏元素基础样式 */
+.game-object {
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: all 0.3s ease;
+}
+
+/* 障碍物样式 */
+.obstacle {
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 50;
+}
+
+.obstacle.desk {
+    width: 100px;
+    height: 60px;
+}
+
+.obstacle.cabinet {
+    width: 80px;
+    height: 120px;
+}
+
+.obstacle.tree {
+    width: 100px;
+    height: 120px;
+}
+
+.obstacle.bench {
+    width: 120px;
+    height: 40px;
+}
+
+/* 场景特定样式 */
+.scene-home {
+    background-color: #F5F5DC;
+}
+
+.scene-office {
+    background-color: #F0F8FF;
+}
+
+.scene-park {
+    background-color: #90EE90;
+}
+
+/* 动画效果 */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* 角色状态动画 */
+.character-status {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 110;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 场景过渡动画 */
+.scene-transition {
+    animation: sceneFade 0.5s ease-out;
+}
+
+@keyframes sceneFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 响应式调整 */
+@media (max-width: 1024px) {
+    #character {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .toilet {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .npc {
+        width: 30px;
+        height: 30px;
+    }
+} 

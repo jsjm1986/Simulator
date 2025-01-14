@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>拉屎模拟器</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 游戏场景 -->
+        <div id="game-scene">
+            <div id="character">
+                <div class="character-status"></div>
+            </div>
+            <div id="toilets"></div>
+            <div id="npcs"></div>
+            <div id="obstacles"></div>
+        </div>
+
+        <!-- 游戏UI面板 -->
+        <div id="game-ui">
+            <div class="meter-container">
+                <div class="stat-item">
+                    <span class="stat-label">时间</span>
+                    <span class="stat-value"><span id="timer">60</span>秒</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">分数</span>
+                    <span class="stat-value"><span id="score">0</span></span>
+                </div>
+            </div>
+
+            <div class="meter-container">
+                <div class="meter-label">急迫度</div>
+                <div id="urgency-meter">
+                    <div id="urgency-fill"></div>
+                </div>
+
+                <div class="meter-label">力度控制</div>
+                <div id="force-meter">
+                    <div class="meter-fill"></div>
+                </div>
+            </div>
+
+            <div class="controls-guide">
+                <h4>控制说明</h4>
+                <ul>
+                    <li>↑/W：向上移动</li>
+                    <li>↓/S：向下移动</li>
+                    <li>←/A：向左移动</li>
+                    <li>→/D：向右移动</li>
+                    <li>空格：控制力度</li>
+                    <li>ESC：暂停游戏</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 状态提示 -->
+        <div class="status-indicator"></div>
+        <div class="game-tips"></div>
+
+        <!-- 游戏菜单 -->
+        <div id="game-menu" class="active">
+            <div class="menu-content">
+                <h1>拉屎模拟器</h1>
+                <p class="game-desc">
+                    控制你的角色找到厕所并完成任务！
+                </p>
+                <div class="menu-buttons">
+                    <button id="start-game">开始游戏</button>
+                    <button id="select-character">选择角色</button>
+                    <button id="select-scene">选择场景</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/assets.js"></script>
+    <script src="js/character.js"></script>
+    <script src="js/scene.js"></script>
+    <script src="js/mobile-controller.js"></script>
+    <script src="js/game.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            GameAssets.init();
+            window.gameInstance = new Game();
+        });
+    </script>
+</body>
+</html> 
